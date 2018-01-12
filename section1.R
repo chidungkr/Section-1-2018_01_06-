@@ -260,8 +260,9 @@ tail(from_eviews)
 from_eviews %>% dim()
 from_eviews %>% names()
 
-
-# rename() function: 
+#--------------------------
+#  1. rename() function 
+#--------------------------
 
 df1 <- rename(from_eviews, Age = AGE, Urban = URBAN)
 df1 %>% head()
@@ -269,7 +270,9 @@ df1 %>% head()
 df1 <- from_eviews %>% rename(Age = AGE, Urban = URBAN)
 df1 %>% head()
 
-# select() function: 
+#-----------------------
+# 2. select() function 
+#-----------------------
 
 df2 <- select(from_eviews, AGE, IQ, WAGE)
 head(df2)
@@ -290,13 +293,19 @@ df5 %>% head()
 df6 <- from_eviews %>% select(AGE)
 
 
-# pull(): 
+#------------------------
+#   3. pull() function
+#------------------------
+
 df7 <- from_eviews %>% pull(AGE)
 
 str(df7)
 str(df6)
 
-# mutate(): 
+
+#------------------------
+#  4. mutate() function
+#------------------------
 
 df8 <- from_eviews %>% mutate(AGE2 = AGE^2, 
                               UBSO = SOUTH*URBAN, 
@@ -311,7 +320,10 @@ df9 <- from_eviews %>% transmute(AGE2 = AGE^2,
 df9 %>% head()
 
 
-# case_when(): 
+#--------------------------
+#  5. case_when() function
+#--------------------------
+
 
 df10 <- from_eviews %>% mutate(MALE = case_when(MALE == 1 ~ "Male", 
                                                 MALE == 0 ~ "Female"))
@@ -330,7 +342,9 @@ from_eviews$MALE %>% table()
 
 df11$TYPE %>% table()
 
-# slice(): 
+#-------------------------------------------------------
+#  6. slice() and sample_n() / sample_frac() function
+#-------------------------------------------------------
 
 df12 <- from_eviews %>% slice(1:3)
 df12
@@ -352,7 +366,222 @@ df16 <- from_eviews %>% sample_frac(0.01)
 dim(df16)
 0.01*nrow(from_eviews)
 
+#---------------------------------
+#    7. arrange() function
+#---------------------------------
+
+# For numeric variables: 
+
+df17 <- df16 %>% arrange(AGE)
+df17 %>% head()
+
+df18 <- df16 %>% arrange(desc(AGE)) # Method 1. 
+df19 <- df16 %>% arrange(-AGE) # Method 2. 
+
+df18 %>% head()
+df19 %>% head()
+
+df16 %>% 
+  arrange(-AGE) %>% 
+  head()
+
+from_eviews %>% 
+  arrange(-AGE) %>% 
+  slice(c(1:5, 931:935)) # Not recommended.
+
+from_eviews %>% 
+  arrange(-AGE) %>% 
+  slice(c(1:5, nrow(from_eviews) - 5:nrow(from_eviews))) # highly recommended. 
+
+from_eviews %>% 
+  arrange(-AGE) %>% 
+  slice(c(1:5, nrow(.) - 5:nrow(.)))
+
+# For character variables: 
+
+nation <- c("Indonesia", "Thailand", "Philippines")
+gdp <- c(12378, 17786, 8229)
+
+# Using class() or str() for inspecting type of vector (or any objects in R): 
+str(gdp) 
+str(nation) 
+
+class(gdp) 
+class(nation)
+
+# Create a logical vector: 
+muslim <- c(TRUE, FALSE, FALSE)
+
+# Create a factor vector by using factor() function: 
+nation_f <- factor(c("Indonesia", "Thailand", "Philippines"))
+
+# Create a data frame from vectors: 
+
+df1 <- data.frame(nation, gdp, muslim)
+
+df1 %>% arrange(nation)
+df1 %>% arrange(desc(nation))
+
+#-----------------------------
+#   8. gather() function
+#-----------------------------
+
+# Create a data frame: 
+
+panel_df <- data.frame(thoi_gian = c(2014, 2015, 2016), 
+                       p_com_A = c(2, 3, 2), 
+                       p_com_B = c(7, 5, 6))
 
 
+panel_df
+
+# Convert to long form: 
+panel_long <- panel_df %>% gather(a, b, -thoi_gian)
+
+panel_long 
+
+# Rename for some columns: 
+panel_long_rename <- panel_long %>% rename(symbol = a, price = b)
+panel_long_rename 
+
+# Hightly recommended: 
+
+panel_long_c2 <- panel_df %>% gather(symbol, price,  -thoi_gian)
+panel_long_c2
+
+#----------------------------
+#   9. group_by() function
+#----------------------------
+
+df11 %>% str()
+
+df11 <- df11 %>% mutate(BLACK = case_when(BLACK == 1 ~ "Black", BLACK == 0 ~ "White"), 
+                        MALE = case_when(MALE == 1 ~ "Male", MALE == 0 ~ "Female"), 
+                        MARRIED = case_when(MARRIED == 1 ~ "Yes", MARRIED == 0 ~ "No"), 
+                        SOUTH = case_when(SOUTH == 1 ~ "South", SOUTH == 0 ~ "North"), 
+                        URBAN = case_when(URBAN == 1 ~ "Urban", URBAN == 0 ~ "Rural"))
+
+df11 %>% str()
+
+df11 %>% 
+  group_by(MALE) %>% 
+  count()
+
+from_eviews %>% 
+  group_by(MALE) %>% 
+  count()
+
+df11 %>% 
+  group_by(MALE, BLACK) %>% 
+  count()
+
+
+df11 %>% 
+  group_by(MALE, BLACK, SOUTH) %>% 
+  count()
+
+#====================================
+#  10. summarise_each() function
+#====================================
+
+df11 %>% summarise_each(funs(min, max, sd), WAGE)
+
+df11 %>% summarise_each(funs(min, max, sd), WAGE, AGE)
+
+df11 %>% 
+  group_by(MALE) %>% 
+  summarise_each(funs(min, max, sd, mean),  WAGE)
+
+df11 %>% 
+  group_by(MALE) %>% 
+  summarise_each(funs(min, max, sd, mean, n()),  WAGE)
+
+
+#========================================
+#     Data Visualization Section
+#     1. Scatet Plot 
+#     2. Line Plot
+#     3. Bar Plot
+#     4. Box Plot / Histogram / Density
+#========================================
+
+#----------------------------------------
+#         1. Scatter Plot
+#----------------------------------------
+
+library(mosaic)
+data("Galton")
+
+# ?Galton
+
+# A simple scatter plot (method 1): 
+
+Galton %>% 
+  ggplot(aes(x = father, y = height)) + 
+  geom_point()
+
+# Method 2: 
+
+Galton %>% 
+  ggplot(aes(father, height)) + 
+  geom_point()
+
+# Add regression line: 
+
+Galton %>% 
+  ggplot(aes(father, height)) + 
+  geom_point() + 
+  geom_smooth(method = "lm")
+
+p1 <- Galton %>% 
+  ggplot(aes(father, height)) + 
+  geom_point()
+
+p1
+
+p2 <- p1 + geom_smooth(method = "lm")
+p2
+
+p3 <- p1 + geom_smooth(method = "lm", se = FALSE)
+p3
+
+
+Galton %>% 
+  ggplot(aes(father, height)) + 
+  geom_point(color = "blue", alpha = 0.4) + 
+  geom_smooth(method = "lm", color = "red", fill = "red") + 
+  theme_minimal() 
+
+
+Galton %>% 
+  ggplot(aes(father, height)) + 
+  geom_point(alpha = 0.3) + 
+  geom_point(data = Galton %>% filter(height > 75), color = "red", size = 4) + 
+  geom_point(data = Galton %>% filter(height < 60), color = "green", size = 4) + 
+  geom_smooth(method = "lm")
+
+
+theme_set(theme_minimal())
+
+Galton %>% 
+  ggplot(aes(father, height)) + 
+  geom_point() + 
+  geom_smooth(method = "lm") + 
+  facet_wrap(~ sex)
+
+
+Galton %>% 
+  ggplot(aes(father, height, color = sex)) + 
+  geom_point() + 
+  geom_smooth(method = "lm")
+
+Galton %>% 
+  ggplot(aes(father, height, color = sex)) + 
+  geom_point() + 
+  geom_smooth(method = "lm", color = "blue",  fill = "blue", alpha = 0.2) +  
+  facet_wrap(~ sex)
+
+
+# A case Study: http://rpubs.com/chidungkt/271482 
 
 
