@@ -515,16 +515,22 @@ data("Galton")
 # ?Galton
 
 # A simple scatter plot (method 1): 
+library(ggthemes)
 
 Galton %>% 
   ggplot(aes(x = father, y = height)) + 
-  geom_point()
+  geom_point() 
+
+
 
 # Method 2: 
 
 Galton %>% 
   ggplot(aes(father, height)) + 
-  geom_point()
+  geom_point() + 
+  geom_smooth(method = "lm")
+
+Galton %>% lm(height ~ father, data = .) %>% summary()
 
 # Add regression line: 
 
@@ -533,6 +539,8 @@ Galton %>%
   geom_point() + 
   geom_smooth(method = "lm")
 
+
+
 p1 <- Galton %>% 
   ggplot(aes(father, height)) + 
   geom_point()
@@ -540,17 +548,34 @@ p1 <- Galton %>%
 p1
 
 p2 <- p1 + geom_smooth(method = "lm")
+
 p2
 
 p3 <- p1 + geom_smooth(method = "lm", se = FALSE)
 p3
 
+u <- Galton %>% 
+  ggplot(aes(father, height)) + 
+  geom_point(color = "blue", alpha = 0.4) + 
+  geom_smooth(method = "lm", color = "red", fill = "purple")
+
+u
+
 
 Galton %>% 
   ggplot(aes(father, height)) + 
-  geom_point(color = "blue", alpha = 0.4) + 
+  geom_point(color = "#8B2323", alpha = 0.4) + 
+  geom_point(data = Galton %>% filter(height > 75), color = "red", size = 4) + 
+  geom_point(data = Galton %>% filter(height < 60), color = "yellow", size = 4) + 
   geom_smooth(method = "lm", color = "red", fill = "red") + 
-  theme_minimal() 
+  theme_minimal() + 
+  labs(x = "Father's Height", y = "Son's Height", 
+       title = "The Relationship between X and Y", 
+       caption = "Data Source: F. Galton", 
+       subtitle = "Unit: Inches")
+  
+
+
 
 
 Galton %>% 
@@ -563,25 +588,203 @@ Galton %>%
 
 theme_set(theme_minimal())
 
-Galton %>% 
-  ggplot(aes(father, height)) + 
-  geom_point() + 
-  geom_smooth(method = "lm") + 
-  facet_wrap(~ sex)
-
-
-Galton %>% 
-  ggplot(aes(father, height, color = sex)) + 
+Galton %>% ggplot(aes(father, height, color = sex)) + 
   geom_point() + 
   geom_smooth(method = "lm")
 
+
 Galton %>% 
   ggplot(aes(father, height, color = sex)) + 
   geom_point() + 
-  geom_smooth(method = "lm", color = "blue",  fill = "blue", alpha = 0.2) +  
+  geom_smooth(method = "lm", color = "blue", fill = "blue") + 
+  facet_wrap(~ sex)
+
+Galton %>% 
+  ggplot(aes(father, height, color = sex)) + 
+  geom_point() + 
+  geom_smooth(method = "lm", color = "#8B1A1A",  fill = "purple", alpha = 0.2) +  
   facet_wrap(~ sex)
 
 
-# A case Study: http://rpubs.com/chidungkt/271482 
+
+
+# A case Study: http://rpubs.com/chidungkt/271482 : 
+
+
+# Load các gói và lấy dữ liệu  từ World Bank: 
+# library(WDI)
+# library(ggrepel)
+# 
+# mydf <- WDI(country = "all",
+#             start = 2015,
+#             end = 2016,
+#             indicator = c("SP.POP.TOTL",
+#                           # Tuổi thọ bình quân:
+#                           "SP.DYN.LE00.IN",
+#                           # GDP đầu người:
+#                           "NY.GDP.PCAP.PP.CD"))
+# write.csv(mydf, "E:/ngay_13_01.csv", row.names = FALSE)
+# write.csv(d2, "E:/d2.csv", row.names = FALSE)
+# 
+# d <- WDIcache()
+# 
+# d2 <- data.frame(d[[2]])
+# str(d2)
+# # Chỉ lấy dữ liệu  năm 2015:
+
+mydf <- read.csv("E:/ngay_13_01.csv")
+d2 <- read.csv("E:/d2.csv")
+
+nam2015 <- mydf %>% filter(year == 2015)
+nam2015 %>% str()
+d2 %>% str()
+
+
+nam2015 <- nam2015 %>% mutate_if(is.factor, as.character)
+nam2015 %>% str()
+
+d2 <- d2 %>% mutate_if(is.factor, as.character)
+
+# Lấy thêm một cột  biến  về  nhóm thu nhập cho các quốc gia: 
+chung <- intersect(d2$country, nam2015$country)
+chung %>% head()
+
+nam2015 <- nam2015 %>% 
+  filter(country %in% chung)
+
+d2_small <- d2 %>% filter(country %in% chung)
+
+nam2015 %>% names()
+d2_small %>% names()
+
+nam2015 <- merge(nam2015, d2_small, by = "country")
+
+nam2015$income %>% table()
+
+
+# Không lấy các quốc gia không  rõ nhóm thu nhập (loại Aggregates): 
+nam2015 <- nam2015 %>% 
+  filter(income != "Aggregates")
+
+#   Hiển thị một  số quốc gia được  lựa  chọn: 
+note <- c("Vietnam", "China", "India", "Japan", "Thailand", "Philippines", 
+          "United States", "Indonesia", "Malaysia", "France", "Ukraine", 
+          "Singapore", "Spain", "Australia", "Russian Federation")
+
+# Mối quan hệ giữa thu nhập  đầu người (trục X) và tuổi thọ (trục Y) đồng thời
+# biểu diễn quy  mô dân số của từng quốc gia bằng diện tích của đường tròn:
+
+
+nam2015 %>% 
+  ggplot(aes(NY.GDP.PCAP.PP.CD, SP.DYN.LE00.IN, size = SP.POP.TOTL, color = income)) + 
+  geom_point()
+
+
+library(ggrepel)
+
+p <- nam2015 %>% ggplot(aes(NY.GDP.PCAP.PP.CD, SP.DYN.LE00.IN, size = SP.POP.TOTL, colour = income)) + 
+  geom_point(alpha = 0.45, show.legend = FALSE) + 
+  scale_size(range = c(1, 20)) + 
+  scale_x_continuous(limits = c(500, 60000), 
+                     breaks = seq(5000, 60000, by = 5000)) +  
+  geom_text_repel(size = 3, aes(label = country), 
+                  data = filter(nam2015, country %in% note), 
+                  colour = "black", 
+                  force = 10) + 
+  labs(x = "GDP per capital", 
+       y = "Life expectancy", 
+       title = "The relationship between Life Expectancy and GDP per capital", 
+       caption =  "Data Source: The World Bank")
+
+p + theme_economist()
+
+
+#----------------------------------------
+#         2.  Bar Plot
+#----------------------------------------
+
+library(AER)
+data("CPS1988")
+
+k1 <- CPS1988 %>% 
+  group_by(region) %>% count() %>% 
+  ggplot(aes(region, n)) + geom_col() + theme_minimal()
+k1
+
+
+k2 <- CPS1988 %>% 
+  group_by(region) %>% count() %>% 
+  ggplot(aes(region, n, fill = region)) + 
+  geom_col() + theme_minimal()
+k2
+
+
+k3 <- CPS1988 %>% 
+  group_by(region) %>% count() %>% 
+  ggplot(aes(reorder(region, n), n, fill = region)) + 
+  geom_col(show.legend = FALSE)
+k3
+
+
+k4 <- k3 + coord_flip() + 
+  labs(x = NULL, y = NULL, 
+       title = "Observations by Region", 
+       caption = "Data Source: US Census Bureau")
+k4
+
+
+k5 <- k4 + theme_economist(horizontal = FALSE)
+k5
+
+#  Nếu  muốn hiện  thêm số: 
+k7 <- k4 + geom_text(aes(label = n), color = "white", hjust = 1.2)
+k7
+
+k8 <- CPS1988 %>% group_by(region, ethnicity) %>% count() %>% 
+  ggplot(aes(region, n)) + geom_col() + 
+  facet_wrap(~ ethnicity, scales = "free") + 
+  geom_text(aes(label = n), color = "white", vjust = 1.2, size = 3) + 
+  labs(x = NULL, y = NULL, 
+       title = "Observations by Region and Ethnicity", 
+       caption = "Data Source: US Census Bureau")
+
+k8
+
+
+k9 <- CPS1988 %>% group_by(region, ethnicity) %>% count() %>% 
+  ggplot(aes(region, n, fill = ethnicity)) + geom_col(position = "stack") + 
+  geom_text(aes(label = n), color = "white", vjust = 1.2, size = 3) + 
+  labs(x = NULL, y = NULL, 
+       title = "Observations by Region and Ethnicity", 
+       caption = "Data Source: US Census Bureau")
+k9
+# Kiểu 3 (hiển thị hình): 
+k10 <- CPS1988 %>% group_by(region, ethnicity) %>% count() %>% 
+  ggplot(aes(region, n, fill = ethnicity)) + geom_col(position = "stack") + 
+  labs(x = NULL, y = NULL, 
+       title = "Observations by Region and Ethnicity", 
+       caption = "Data Source: US Census Bureau")
+k10
+
+
+k11 <- CPS1988 %>% group_by(region, ethnicity) %>% count() %>% 
+  ggplot(aes(region, n, fill = ethnicity)) + geom_col(position = "fill") + 
+  labs(x = NULL, y = NULL, 
+       title = "Observations by Region and Ethnicity", 
+       caption = "Data Source: US Census Bureau")
+k11
+
+
+library(hrbrthemes)
+k12 <- k11 + coord_flip() + scale_y_percent() + 
+  labs(x = "US Region", y = "Ethnic Proportion", 
+       title = "Observations by Region and Ethnicity", 
+       caption = "Data Source: US Census Bureau")
+
+k12
+
+
+
+
 
 
